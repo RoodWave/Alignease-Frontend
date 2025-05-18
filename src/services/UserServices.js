@@ -1,18 +1,14 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:8080/user",
+    baseURL: "http://localhost:8080/auth",
 });
 
 const userService = {
     // Sign In
     signIn: async (userDTO) => {
-        const apiRequest = {
-            userDTO
-        };
-        console.log(apiRequest);
         try {
-            const response = await axiosInstance.post('/sign-in', apiRequest);
+            const response = await axiosInstance.post('/login', userDTO);
             return response.data;
         } catch (error) {
             console.error("Error on sign-in", error);
@@ -23,7 +19,7 @@ const userService = {
     // Sign Up
     signUp: async (userDTO) => {
         try {
-            const response = await axiosInstance.post('/sign-up', userDTO);
+            const response = await axiosInstance.post('/signup', userDTO);
             return response.data;
         } catch (error) {
             console.error("Error on sign-up", error);

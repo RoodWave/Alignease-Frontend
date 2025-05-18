@@ -17,11 +17,7 @@ const UserProfile = () => {
     const [rating, setRating] = useState(3);
 
     // Mock user data
-    const userData = {
-        fullName: "Kavindu Kaihara",
-        email: "Kavindu.kaihara@gmail.com",
-        userType: "Customer"
-    };
+    const userData = JSON.parse(localStorage.getItem("userData"))
 
     return (
         <Container maxWidth="md" sx={{ py: 4 }}>
@@ -74,7 +70,7 @@ const UserProfile = () => {
                                 color: '#000000'
                             }}
                         >
-                            {userData.fullName}
+                            {userData.userName}
                         </Typography>
                         <Typography
                             variant="body2"
@@ -95,7 +91,7 @@ const UserProfile = () => {
                         </Typography>
                         <TextField
                             fullWidth
-                            value={userData.fullName}
+                            value={userData.userName}
                             variant="outlined"
                             size="small"
                             disabled
@@ -114,7 +110,7 @@ const UserProfile = () => {
                         </Typography>
                         <TextField
                             fullWidth
-                            value={userData.userType}
+                            value={userData.userRole ?? "CUSTOMER"}
                             variant="outlined"
                             size="small"
                             disabled

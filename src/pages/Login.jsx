@@ -60,41 +60,41 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        localStorage.setItem("userName",formData.email)
-        navigate("/");
+        if (!validateForm()) {
+            return;
+        }
 
-        // if (!validateForm()) {
-        //     return;
-        // }
+        setLoading(true);
+        try {
+            const userDTO = {
+                email: formData.email,
+                password: formData.password,
+                userType: formData.userType
+            };
 
-        // setLoading(true);
-        // try {
-        //     const userDTO = {
-        //         email: formData.email,
-        //         password: formData.password,
-        //         userType: formData.userType
-        //     };
+            const response = await userServices.signIn(userDTO);
+            console.log("response : ", response);
 
-        //     const response = await userServices.signIn(userDTO);
-        //     console.log("response : ", response);
+            if (response?.status === "success") {
+                localStorage.setItem("userId", response.user.userId);
+                localStorage.setItem("userName", response.user.userName);
+                localStorage.setItem("userData", JSON.stringify(response.user));
 
-        //     if (response?.status === "success") {
-        //         localStorage.setItem("userId", response.user.userId);
-        //         localStorage.setItem("userName", response.user.userName);
 
-        //         if (response?.user?.userType === "CUSTOMER") {
-        //             navigate("/home");
-        //         } else if (response?.user?.userType === "ADMIN") {
-        //             navigate("/admin-dashboard");
-        //         }
-        //     } else {
-        //         toast.error(response.message);
-        //     }
-        // } catch (error) {
-        //     console.log("Error in Login");
-        // } finally {
-        //     setLoading(false);
-        // }
+                navigate("/");
+                if (response?.user?.userType === "CUSTOMER") {
+                    navigate("/");
+                } else if (response?.user?.userType === "ADMIN") {
+                    navigate("/admin/bookings");
+                }
+            } else {
+                toast.error(response.message);
+            }
+        } catch (error) {
+            toast.error(error.message)
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

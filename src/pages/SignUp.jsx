@@ -76,10 +76,10 @@ const SignUp = () => {
             userType: formData.userType
         };
 
-        let finalPayload = { userDTO: basePayload };
+        // let finalPayload = { userDTO: basePayload };
 
         try {
-            const response = await userServices.signUp(finalPayload);
+            const response = await userServices.signUp(basePayload);
             console.log("Sign up response:", response);
 
             if (response?.status === "success") {

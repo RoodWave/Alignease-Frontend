@@ -15,7 +15,8 @@ const BookingCard = ({
     selectedDate,
     setSelectedDate,
     selectedTime,
-    setSelectedTime
+    setSelectedTime,
+    btnClick
 }) => {
     const isMobile = useMediaQuery('(max-width:900px)');
 
@@ -107,6 +108,7 @@ const BookingCard = ({
                             backgroundColor: '#e51e36',
                             '&:hover': { backgroundColor: '#c31a2e' }
                         }}
+                        onClick={btnClick}
                     >
                         BOOK NOW
                     </Button>
