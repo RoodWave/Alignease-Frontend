@@ -82,7 +82,6 @@ const TireOrdering = () => {
         getAllProducts();
     }, []);
 
-    console.log({ productsWithImages });
 
 
     return (

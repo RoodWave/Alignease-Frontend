@@ -1,12 +1,12 @@
 import { Box, Button, Card, CardMedia, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-const ServiceCard = ({ title, image, path }) => {
+const ServiceCard = ({ title, image, path ,id}) => {
   const navigate = useNavigate();
   return (
     <Card sx={{
       position: 'relative',
-      height: '392px',
+      maxHeight: '392px',
       width: '100%',
       overflow: 'hidden',
       borderRadius: '20px',
@@ -44,7 +44,7 @@ const ServiceCard = ({ title, image, path }) => {
               textTransform: 'uppercase',
               fontWeight: 'bold'
             }}
-            onClick={() => navigate(path)}
+            onClick={() => navigate(path,{state:{id}})}
           >
             VIEW DETAILS
           </Button>

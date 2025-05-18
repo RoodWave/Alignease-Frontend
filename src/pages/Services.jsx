@@ -6,7 +6,7 @@ import {
   useMediaQuery,
   useTheme
 } from '@mui/material';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import BannerImage from '../assets/ourServicesAndProducts/bannerImg.png';
 import ServiceImage1 from '../assets/ourServicesAndProducts/services/service1.png';
 import ServiceImage2 from '../assets/ourServicesAndProducts/services/service2.png';
@@ -22,13 +22,11 @@ import ProductImage6 from '../assets/products/product6.png';
 import Banner from '../components/Banner';
 import ProductCard from '../components/ProductCard';
 import ServiceCard from '../components/ServiceCard';
+import ourServicesService from '../services/OurServicesService';
+import commonService from '../services/CommonService';
 
 
 
-
-const Services = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Sample service data
   const services = [
@@ -64,6 +62,50 @@ const Services = () => {
       path: '/services/part-replacement'
     },
   ];
+
+
+
+const Services = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+      const [servicesWithImages, setServicesWithImages] = useState([]);
+      const userId = localStorage.getItem("userId")
+  
+      const getAllServices = async () => {
+          try {
+              const res = await ourServicesService.getAllServices();
+  
+              if (res?.services) {
+                  const productPromises = res.services.map(async (service) => {
+                      const imageBlobUrl = await commonService.getProductImage(service.imageName);
+  
+                      return {
+                        id: service.serviceId,
+                        title: service.name,
+                        image: imageBlobUrl,
+                        path: '/services/tire-ordering'
+                      };
+                  });
+  
+                  const services = await Promise.all(productPromises);
+  
+                  console.log({ services });
+  
+                  setServicesWithImages(services);
+              }
+          } catch (error) {
+              console.error("Error fetching services with images", error);
+          }
+      };
+      console.log({servicesWithImages});
+      
+  
+      useEffect(() => {
+          getAllServices();
+      }, []);
+  
+
+
 
   // Sample product data
 
@@ -154,9 +196,9 @@ const Services = () => {
         <Grid container spacing={5} sx={{
           justifyContent: 'center'
         }}>
-          {services.map((service) => (
+          {servicesWithImages.map((service) => (
             <Grid item xs={12} sm={6} md={4} key={service.id}>
-              <ServiceCard title={service.title} image={service.image} path={service.path} />
+              <ServiceCard title={service.title} image={service.image} path={service.path} id={service.id}/>
             </Grid>
           ))}
         </Grid>

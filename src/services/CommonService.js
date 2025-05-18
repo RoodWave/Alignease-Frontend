@@ -9,18 +9,32 @@ const commonService = {
     getProductImage: async (imageId) => {
         try {
             const response = await axiosInstance.get(`product-images/${imageId}`, {
-                responseType: 'blob', // ⬅️ This is important!
+                responseType: 'blob',
             });
             console.log({response});
             
-    
-            // Convert the blob to a URL
             const imageUrl = URL.createObjectURL(response.data);
             return imageUrl;
     
         } catch (error) {
             console.error("Error retrieving image", error);
-            throw error;
+            // throw error;
+        }
+    },
+    getServiceImage: async (imageId) => {
+        try {
+            const response = await axiosInstance.get(`service-images/${imageId}`, {
+                responseType: 'blob',
+            });
+            console.log({response});
+            
+
+            const imageUrl = URL.createObjectURL(response.data);
+            return imageUrl;
+    
+        } catch (error) {
+            console.error("Error retrieving image", error);
+            // throw error;
         }
     }
     

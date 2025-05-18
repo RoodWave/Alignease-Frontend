@@ -22,16 +22,18 @@ import BookingCard from '../components/BookingCard';
 import { toast } from 'react-toastify';
 import ourServicesService from '../services/OurServicesService';
 import dayjs from 'dayjs';
+import { useLocation } from 'react-router-dom';
 
 const Wheelbalancing = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [selectedTime, setSelectedTime] = useState(dayjs());
     const userId = localStorage.getItem("userId")
-
+    const location = useLocation();
+    const { id } = location.state || {};
 
     const handleBooking = async () => {
         const payload = {
-            serviceId: 2,
+            serviceId: id,
             userId: Number(userId),
             selectedDate: selectedDate.format('YYYY-MM-DD'),
             selectedTime: selectedTime.format('HH:mm'),

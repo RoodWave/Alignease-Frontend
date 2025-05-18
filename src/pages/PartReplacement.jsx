@@ -6,16 +6,18 @@ import CardImg from '../assets/tirePatching/image.png';
 import BannerImage from '../assets/tirePatching/bannerImg.png';
 import Banner from '../components/Banner';
 import BookingCard from '../components/BookingCard';
+import { useLocation } from 'react-router-dom';
 
 const PartReplacement = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [selectedTime, setSelectedTime] = useState(dayjs());
     const userId = localStorage.getItem("userId")
-
+    const location = useLocation();
+    const { id } = location.state || {};
 
     const handleBooking = async () => {
         const payload = {
-            serviceId: 2,
+            serviceId: id,
             userId: Number(userId),
             selectedDate: selectedDate.format('YYYY-MM-DD'),
             selectedTime: selectedTime.format('HH:mm'),
