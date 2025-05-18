@@ -1,440 +1,613 @@
-import React, { useState, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
-import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import Grid from '@mui/material/Grid';
-import IconButton from '@mui/material/IconButton';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import AddIcon from '@mui/icons-material/Add';
-import CloseIcon from '@mui/icons-material/Close';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import React, {useState, useEffect} from 'react';
+import {
+    Box,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Button,
+    Typography,
+    Modal,
+    TextField,
+    Grid,
+    IconButton,
+    Snackbar,
+    Alert,
+    Menu,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Select,
+    CircularProgress
+} from '@mui/material';
+import {
+    Add as AddIcon,
+    Close as CloseIcon,
+    MoreVert as MoreVertIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Visibility as VisibilityIcon
+} from '@mui/icons-material';
+import productService from '../services/ProductService';
 
-export default function Inventory() {
-  // State for inventory items
-  const [inventoryItems, setInventoryItems] = useState([
-    { id: 1, image: "/api/placeholder/150/150", brand: "Next Gen", model: "GX100", size: "Large", price: "US$ 20,000", availability: "Qty 10" },
-    { id: 2, image: "/api/placeholder/150/150", brand: "Next Gen", model: "GX100", size: "Large", price: "US$ 20,000", availability: "Qty 10" },
-    { id: 3, image: "/api/placeholder/150/150", brand: "Next Gen", model: "GX100", size: "Large", price: "US$ 20,000", availability: "Qty 10" },
-    { id: 4, image: "/api/placeholder/150/150", brand: "Next Gen", model: "GX100", size: "Large", price: "US$ 50,000", availability: "Qty 10" }
-  ]);
+const Inventory = () => {
+    // State for inventory items
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  // State for modal
-  const [openModal, setOpenModal] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    brand: '',
-    model: '',
-    size: '',
-    price: '',
-    quantity: '',
-    location: 'Warehouse A',
-    stockStatus: 'IN_STOCK'
-  });
+    // Modal states
+    const [openModal, setOpenModal] = useState(false);
+    const [modalType, setModalType] = useState('add'); // 'add' or 'edit'
+    const [currentProduct, setCurrentProduct] = useState(null);
 
-  // Notification state
-  const [notification, setNotification] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
-
-  // Handle modal open/close
-  const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    resetForm();
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      brand: '',
-      model: '',
-      size: '',
-      price: '',
-      quantity: '',
-      location: 'Warehouse A',
-      stockStatus: 'IN_STOCK'
-    });
-    setUploadedImage(null);
-    setImagePreview(null);
-  };
-
-  // Handle image upload
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setUploadedImage(file);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
-  // Handle form submission
-  const handleSubmit = async () => {
-    if (!uploadedImage || !formData.brand || !formData.model || !formData.price || !formData.quantity) {
-      setNotification({
-        open: true,
-        message: 'Please fill all required fields and upload an image',
-        severity: 'error'
-      });
-      return;
-    }
-
-    try {
-      const formDataObj = new FormData();
-      
-      // Create the product JSON
-      const productData = {
-        brand: formData.brand,
-        model: formData.model,
-        size: formData.size,
-        price: formData.price,
-        inventoryRequest: {
-          quantity: parseInt(formData.quantity),
-          location: formData.location,
-          stockStatus: formData.stockStatus
+    // Form state
+    const [formData, setFormData] = useState({
+        name: '',
+        brand: '',
+        model: '',
+        size: '',
+        price: '',
+        inventory: {
+            quantity: '',
+            location: 'Warehouse A',
+            stockStatus: 'IN_STOCK'
         }
-      };
-      
-      // Append product JSON and image to FormData
-      formDataObj.append('product', JSON.stringify(productData));
-      formDataObj.append('image', uploadedImage);
-      
-      // Make API call
-      const response = await fetch('http://localhost:8080/product/add', {
-        method: 'POST',
-        body: formDataObj,
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        // Add new item to state
-        const newItem = {
-          id: result.id || Date.now(),
-          image: imagePreview,
-          brand: formData.brand,
-          model: formData.model,
-          size: formData.size,
-          price: `US$ ${formData.price}`,
-          availability: `Qty ${formData.quantity}`
-        };
-        
-        setInventoryItems([...inventoryItems, newItem]);
-        handleCloseModal();
-        
-        setNotification({
-          open: true,
-          message: 'Product added successfully!',
-          severity: 'success'
+    });
+
+    // Image upload state
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+
+    // Notification state
+    const [notification, setNotification] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
+
+    // Menu state for action dropdown
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [selectedProductId, setSelectedProductId] = useState(null);
+
+    // Fetch products on component mount
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    const fetchProducts = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await productService.getAllProduct();
+            if (response.status === 'success') {
+                setProducts(response.products);
+            }
+        } catch (err) {
+            console.error("Error fetching products:", err);
+            setError("Failed to fetch products. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle menu open
+    const handleMenuOpen = (event, productId) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedProductId(productId);
+    };
+
+    // Handle menu close
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setSelectedProductId(null);
+    };
+
+    // Handle modal open for adding new product
+    const handleAddModalOpen = () => {
+        setModalType('add');
+        setCurrentProduct(null);
+        setFormData({
+            name: '',
+            brand: '',
+            model: '',
+            size: '',
+            price: '',
+            inventory: {
+                quantity: '',
+                location: 'Warehouse A',
+                stockStatus: 'IN_STOCK'
+            }
         });
-      } else {
-        throw new Error('Failed to add product');
-      }
-    } catch (error) {
-      console.error('Error adding product:', error);
-      setNotification({
-        open: true,
-        message: 'Error adding product: ' + error.message,
-        severity: 'error'
-      });
-    }
-  };
+        setImageFile(null);
+        setImagePreview(null);
+        setOpenModal(true);
+    };
 
-  // Handle notification close
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
-  };
+    // Handle modal open for editing product
+    const handleEditModalOpen = (product) => {
+        console.log("product: ", product)
+        setModalType('edit');
+        setCurrentProduct(product);
+        setFormData({
+            name: product.name,
+            brand: product.brand,
+            model: product.model,
+            size: product.size,
+            price: product.price,
+            inventory: {
+                quantity: product.inventory.quantity,
+                location: product.inventory.location,
+                stockStatus: product.inventory.stockStatus
+            }
+        });
+        const fullImageUrl = product.imagePath ? `http://localhost:8080${product.imagePath}` : null;
+        setImagePreview(fullImageUrl);
+        setOpenModal(true);
+    };
 
-  // Fetch inventory data
-  useEffect(() => {
-    // Here you would typically fetch inventory items from your API
-    // Example:
-    // fetch('http://localhost:8080/product/all')
-    //   .then(response => response.json())
-    //   .then(data => setInventoryItems(data))
-    //   .catch(error => console.error('Error fetching inventory data:', error));
-  }, []);
+    // Handle modal close
+    const handleModalClose = () => {
+        setOpenModal(false);
+        setCurrentProduct(null);
+        setImageFile(null);
+        setImagePreview(null);
+    };
 
-  const modalStyle = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 400,
-    bgcolor: 'background.paper',
-    borderRadius: 2,
-    boxShadow: 24,
-    p: 4,
-  };
+    // Handle image upload
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onload = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
-  return (
-    <Box sx={{ width: '100%', p: 2 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" component="h1" fontWeight="bold">
-          Inventory
-        </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
-          onClick={handleOpenModal}
-          sx={{ 
-            bgcolor: '#F3F3F3', 
-            borderRadius: 1,
-            boxShadow:'none',
-            color:'black'
-          }}
-        >
-          Add New Item
-        </Button>
-      </Box>
+    // Handle form input changes
+    const handleInputChange = (e) => {
+        const {name, value} = e.target;
 
-      {/* Inventory Table */}
-      <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 2 }}>
-        <Table>
-          <TableHead sx={{ bgcolor: '#f9f9f9' }}>
-            <TableRow>
-              <TableCell>Image</TableCell>
-              <TableCell>Brand</TableCell>
-              <TableCell>Model</TableCell>
-              <TableCell>Size</TableCell>
-              <TableCell>Price</TableCell>
-              <TableCell>Availability</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell align="right">
-                <IconButton size="small">
-                  <MoreVertIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {inventoryItems.map((item) => (
-              <TableRow key={item.id} hover>
-                <TableCell>
-                  <Box
-                    component="img"
-                    src={item.image}
-                    alt={item.model}
-                    sx={{ width: 60, height: 60, borderRadius: 1 }}
-                  />
-                </TableCell>
-                <TableCell>{item.brand}</TableCell>
-                <TableCell>{item.model}</TableCell>
-                <TableCell>{item.size}</TableCell>
-                <TableCell>{item.price}</TableCell>
-                <TableCell>{item.availability}</TableCell>
-                <TableCell>
-                  <Button 
-                    variant="contained" 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: 'error.main', 
-                      '&:hover': { bgcolor: 'error.dark' },
-                      fontSize: '0.75rem',
-                      py: 0.5
-                    }}
-                  >
-                    DETAILS
-                  </Button>
-                </TableCell>
-                <TableCell></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+        if (name.includes('inventory.')) {
+            const field = name.split('.')[1];
+            setFormData(prev => ({
+                ...prev,
+                inventory: {
+                    ...prev.inventory,
+                    [field]: value
+                }
+            }));
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value
+            });
+        }
+    };
 
-      {/* Add New Item Modal */}
-      <Modal
-        open={openModal}
-        onClose={handleCloseModal}
-        aria-labelledby="modal-add-new-item"
-      >
-        <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography id="modal-title" variant="h6" component="h2">
-              Add New Item
-            </Typography>
-            <IconButton onClick={handleCloseModal} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
+    // Handle form submission
+    const handleSubmit = async () => {
+        if (!formData.brand || !formData.model || !formData.price || !formData.inventory.quantity) {
+            showNotification('Please fill all required fields', 'error');
+            return;
+        }
 
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-            {imagePreview ? (
-              <Box 
-                component="img" 
-                src={imagePreview} 
-                alt="Product preview" 
-                sx={{ height: 150, width: 150, objectFit: 'contain' }}
-              />
-            ) : (
-              <Box 
-                sx={{ 
-                  height: 150, 
-                  width: 150, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  bgcolor: '#f5f5f5',
-                  borderRadius: 1
-                }}
-              >
-                <Typography variant="body2" color="text.secondary" align="center">
-                  Upload Image
+        try {
+            const productData = {
+                name: formData.name,
+                brand: formData.brand,
+                model: formData.model,
+                size: formData.size,
+                price: formData.price,
+                inventoryRequest: {
+                    quantity: parseInt(formData.inventory.quantity),
+                    location: formData.inventory.location,
+                    stockStatus: formData.inventory.stockStatus
+                }
+            };
+
+            if (modalType === 'add') {
+                if (!imageFile) {
+                    showNotification('Please upload an image', 'error');
+                    return;
+                }
+
+                const formDataObj = new FormData();
+                formDataObj.append('product', JSON.stringify(productData));
+                formDataObj.append('image', imageFile);
+
+                await productService.addProduct(formDataObj);
+                showNotification('Product added successfully!', 'success');
+            } else {
+                await productService.updateProduct(productData, currentProduct.productId);
+                showNotification('Product updated successfully!', 'success');
+            }
+
+            fetchProducts();
+            handleModalClose();
+        } catch (err) {
+            console.error("Error saving product:", err);
+            showNotification(`Error: ${err.message}`, 'error');
+        }
+    };
+
+    // Handle product deletion
+    const handleDelete = async () => {
+        handleMenuClose();
+        try {
+            await productService.deleteProduct(selectedProductId);
+            showNotification('Product deleted successfully!', 'success');
+            fetchProducts();
+        } catch (err) {
+            console.error("Error deleting product:", err);
+            showNotification(`Error: ${err.message}`, 'error');
+        }
+    };
+
+    // Show notification
+    const showNotification = (message, severity) => {
+        setNotification({
+            open: true,
+            message,
+            severity
+        });
+    };
+
+    // Close notification
+    const handleNotificationClose = () => {
+        setNotification(prev => ({...prev, open: false}));
+    };
+
+    // Modal style
+    const modalStyle = {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 400,
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 24,
+        p: 4,
+        maxHeight: '80vh',
+        overflowY: 'auto'
+    };
+
+    return (
+        <Box sx={{width: '100%', p: 2}}>
+            {/* Header */}
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
+                <Typography variant="h5" component="h1" fontWeight="bold">
+                    Inventory Management
                 </Typography>
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="upload-image-button"
-                  type="file"
-                  onChange={handleImageUpload}
-                />
-                <label htmlFor="upload-image-button">
-                  <Button 
-                    component="span" 
-                    variant="outlined" 
-                    size="small"
-                    sx={{ mt: 1, borderColor: '#ddd', color: '#888' }}
-                  >
-                    Browse
-                  </Button>
-                </label>
-              </Box>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon/>}
+                    onClick={handleAddModalOpen}
+                    sx={{
+                        bgcolor: '#F3F3F3',
+                        borderRadius: 1,
+                        boxShadow: 'none',
+                        color: 'black'
+                    }}
+                >
+                    Add New Product
+                </Button>
+            </Box>
+
+            {/* Inventory Table */}
+            {loading ? (
+                <Box sx={{display: 'flex', justifyContent: 'center', mt: 4}}>
+                    <CircularProgress/>
+                </Box>
+            ) : error ? (
+                <Typography color="error" sx={{mt: 2}}>{error}</Typography>
+            ) : products.length === 0 ? (
+                <Typography sx={{mt: 2}}>No products found</Typography>
+            ) : (
+                <TableContainer component={Paper} sx={{boxShadow: 1, borderRadius: 2}}>
+                    <Table>
+                        <TableHead sx={{bgcolor: '#f5f5f5'}}>
+                            <TableRow>
+                                <TableCell>Image</TableCell>
+                                <TableCell>Brand</TableCell>
+                                <TableCell>Model</TableCell>
+                                <TableCell>Size</TableCell>
+                                <TableCell>Price</TableCell>
+                                <TableCell>Quantity</TableCell>
+                                <TableCell>Location</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {products.map((product) => (
+                                <TableRow key={product.productId} hover>
+                                    <TableCell>
+                                        {product.imagePath ? (
+                                            <Box
+                                                component="img"
+                                                src={`http://localhost:8080${product.imagePath}`}
+                                                alt={product.model}
+                                                sx={{width: 60, height: 60, borderRadius: 1, objectFit: 'cover'}}
+                                            />
+                                        ) : (
+                                            <Box sx={{
+                                                width: 60,
+                                                height: 60,
+                                                bgcolor: '#f5f5f5',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                borderRadius: 1
+                                            }}>
+                                                <Typography variant="caption" color="textSecondary">
+                                                    No Image
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>{product.brand}</TableCell>
+                                    <TableCell>{product.model}</TableCell>
+                                    <TableCell>{product.size}</TableCell>
+                                    <TableCell>${product.price}</TableCell>
+                                    <TableCell>{product.inventory.quantity}</TableCell>
+                                    <TableCell>{product.inventory.location}</TableCell>
+                                    <TableCell>
+                                        <Box
+                                            sx={{
+                                                px: 1,
+                                                py: 0.5,
+                                                borderRadius: 1,
+                                                display: 'inline-block',
+                                                bgcolor: product.inventory.stockStatus === 'IN_STOCK' ? '#e8f5e9' : '#ffebee',
+                                                color: product.inventory.stockStatus === 'IN_STOCK' ? '#2e7d32' : '#c62828'
+                                            }}
+                                        >
+                                            {product.inventory.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock'}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <IconButton onClick={(e) => handleMenuOpen(e, product.productId)}>
+                                            <MoreVertIcon/>
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             )}
-          </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Brand"
-                name="brand"
-                value={formData.brand}
-                onChange={handleInputChange}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Model"
-                name="model"
-                value={formData.model}
-                onChange={handleInputChange}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Size"
-                name="size"
-                value={formData.size}
-                onChange={handleInputChange}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Price"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                size="small"
-                type="number"
-                InputProps={{
-                  startAdornment: <Box component="span" sx={{ mr: 0.5 }}>$</Box>
-                }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Quantity"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleInputChange}
-                size="small"
-                type="number"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                <Button 
-                  onClick={handleCloseModal} 
-                  variant="outlined"
-                  sx={{ width: '48%', borderColor: '#ddd', color: '#333' }}
+            {/* Action Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+            >
+                <MenuItem onClick={() => {
+                    const product = products.find(p => p.productId === selectedProductId);
+                    handleEditModalOpen(product);
+                    handleMenuClose();
+                }}>
+                    <EditIcon sx={{mr: 1}}/> Edit
+                </MenuItem>
+                <MenuItem onClick={handleDelete}>
+                    <DeleteIcon sx={{mr: 1}}/> Delete
+                </MenuItem>
+            </Menu>
+
+            {/* Add/Edit Product Modal */}
+            <Modal
+                open={openModal}
+                onClose={handleModalClose}
+                aria-labelledby="product-modal"
+            >
+                <Box sx={modalStyle}>
+                    <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
+                        <Typography variant="h6">
+                            {modalType === 'add' ? 'Add New Product' : 'Edit Product'}
+                        </Typography>
+                        <IconButton onClick={handleModalClose} size="small">
+                            <CloseIcon/>
+                        </IconButton>
+                    </Box>
+
+                    {/* Image Upload */}
+                    <Box sx={{mb: 2, display: 'flex', justifyContent: 'center'}}>
+                        {imagePreview ? (
+                            <Box
+                                component="img"
+                                src={imagePreview}
+                                alt="Product preview"
+                                sx={{
+                                    height: 150,
+                                    width: 150,
+                                    objectFit: 'contain',
+                                    border: '1px solid #eee',
+                                    borderRadius: 1
+                                }}
+                            />
+                        ) : (
+                            <Box
+                                sx={{
+                                    height: 150,
+                                    width: 150,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    bgcolor: '#f5f5f5',
+                                    borderRadius: 1
+                                }}
+                            >
+                                <Typography variant="body2" color="text.secondary" align="center">
+                                    Product Image
+                                </Typography>
+                                {modalType === 'add' && (
+                                    <>
+                                        <input
+                                            accept="image/*"
+                                            style={{display: 'none'}}
+                                            id="upload-image"
+                                            type="file"
+                                            onChange={handleImageUpload}
+                                        />
+                                        <label htmlFor="upload-image">
+                                            <Button
+                                                component="span"
+                                                variant="outlined"
+                                                size="small"
+                                                sx={{mt: 1}}
+                                            >
+                                                Upload
+                                            </Button>
+                                        </label>
+                                    </>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
+
+                    {/* Product Form */}
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Brand"
+                                name="brand"
+                                value={formData.brand}
+                                onChange={handleInputChange}
+                                size="small"
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Model"
+                                name="model"
+                                value={formData.model}
+                                onChange={handleInputChange}
+                                size="small"
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Size"
+                                name="size"
+                                value={formData.size}
+                                onChange={handleInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Price"
+                                name="price"
+                                value={formData.price}
+                                onChange={handleInputChange}
+                                size="small"
+                                type="number"
+                                required
+                                InputProps={{
+                                    startAdornment: <Box component="span" sx={{mr: 1}}>$</Box>
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Quantity"
+                                name="inventory.quantity"
+                                value={formData.inventory.quantity}
+                                onChange={handleInputChange}
+                                size="small"
+                                type="number"
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Location"
+                                name="inventory.location"
+                                value={formData.inventory.location}
+                                onChange={handleInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>Stock Status</InputLabel>
+                                <Select
+                                    name="inventory.stockStatus"
+                                    value={formData.inventory.stockStatus}
+                                    onChange={handleInputChange}
+                                    label="Stock Status"
+                                >
+                                    <MenuItem value="IN_STOCK">In Stock</MenuItem>
+                                    <MenuItem value="OUT_OF_STOCK">Out of Stock</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Box sx={{display: 'flex', justifyContent: 'space-between', mt: 2}}>
+                                <Button
+                                    onClick={handleModalClose}
+                                    sx={{width: '48%', color: '#DB002B'}}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleSubmit}
+                                    variant="contained"
+                                    sx={{width: '48%', backgroundColor: '#DB002B'}}
+                                >
+                                    {modalType === 'add' ? 'Add' : 'Update'}
+                                </Button>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Modal>
+
+            {/* Notification */}
+            <Snackbar
+                open={notification.open}
+                autoHideDuration={6000}
+                onClose={handleNotificationClose}
+                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
+            >
+                <Alert
+                    onClose={handleNotificationClose}
+                    severity={notification.severity}
+                    sx={{width: '100%'}}
                 >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSubmit} 
-                  variant="contained" 
-                  sx={{ 
-                    width: '48%', 
-                    bgcolor: 'error.main', 
-                    '&:hover': { bgcolor: 'error.dark' }
-                  }}
-                >
-                  Save
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
+                    {notification.message}
+                </Alert>
+            </Snackbar>
         </Box>
-      </Modal>
+    );
+};
 
-      {/* Notification */}
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={handleCloseNotification} 
-          severity={notification.severity} 
-          sx={{ width: '100%' }}
-        >
-          {notification.message}
-        </Alert>
-      </Snackbar>
-    </Box>
-  );
-}
+export default Inventory;
