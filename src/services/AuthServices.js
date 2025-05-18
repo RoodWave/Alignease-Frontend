@@ -4,7 +4,7 @@ const axiosInstance = axios.create({
     baseURL: "http://localhost:8080/auth",
 });
 
-const userService = {
+const authService = {
     // Sign In
     signIn: async (userDTO) => {
         try {
@@ -28,4 +28,4 @@ const userService = {
     },
 };
 
-export default userService;
+export default authService;

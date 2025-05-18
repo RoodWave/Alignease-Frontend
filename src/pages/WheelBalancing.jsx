@@ -25,26 +25,26 @@ import dayjs from 'dayjs';
 
 const Wheelbalancing = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [selectedTime, setSelectedTime] = useState(dayjs());
+    const [selectedTime, setSelectedTime] = useState(dayjs());
     const userId = localStorage.getItem("userId")
 
 
     const handleBooking = async () => {
         const payload = {
-          serviceId: 2, 
-          userId: Number(userId),    
-          selectedDate: selectedDate.format('YYYY-MM-DD'),
-          selectedTime: selectedTime.format('HH:mm'),
+            serviceId: 2,
+            userId: Number(userId),
+            selectedDate: selectedDate.format('YYYY-MM-DD'),
+            selectedTime: selectedTime.format('HH:mm'),
         };
-    
+
         try {
-          const response = await ourServicesService.bookServices(payload);
-          toast.success("Booking Successful!");
-          console.log(response);
+            const response = await ourServicesService.bookServices(payload);
+            toast.success("Booking Successful!");
+            console.log(response);
         } catch (error) {
-          toast.error("Booking Failed!");
+            toast.error("Booking Failed!");
         }
-      };
+    };
 
     return (
         <Box sx={{ width: '100%' }}>

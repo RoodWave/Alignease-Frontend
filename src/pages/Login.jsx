@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Button, Grid, TextField, Typography, MenuItem, Select, FormControl } from "@mui/material";
 import LoginImg from '../assets/LoginImg.png';
 import { useNavigate } from "react-router-dom";
-import userServices from "../services/UserServices.js";
+import userServices from "../services/AuthServices.js";
 import { toast } from "react-toastify";
 
 const Login = () => {

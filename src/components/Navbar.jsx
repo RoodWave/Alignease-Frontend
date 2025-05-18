@@ -60,7 +60,7 @@ const Navbar = () => {
     const menuItems = [
         {label: "HOME", to: "/"},
         {label: "SERVICES", to: "/services"},
-        {label: "BOOKINGS", to: "/bookings"},
+        {label: "BOOKINGS", to: "/activity"},
         {label: "ABOUT US", to: "/about-us"},
         {label: "CONTACT US", to: "/contact-us"},
     ];

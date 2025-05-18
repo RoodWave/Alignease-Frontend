@@ -8,8 +8,27 @@ import Banner from '../components/Banner';
 import BookingCard from '../components/BookingCard';
 
 const TirePatching = () => {
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [selectedTime, setSelectedTime] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(dayjs());
+    const [selectedTime, setSelectedTime] = useState(dayjs());
+    const userId = localStorage.getItem("userId")
+
+
+    const handleBooking = async () => {
+        const payload = {
+            serviceId: 2,
+            userId: Number(userId),
+            selectedDate: selectedDate.format('YYYY-MM-DD'),
+            selectedTime: selectedTime.format('HH:mm'),
+        };
+
+        try {
+            const response = await ourServicesService.bookServices(payload);
+            toast.success("Booking Successful!");
+            console.log(response);
+        } catch (error) {
+            toast.error("Booking Failed!");
+        }
+    };
 
     return (
         <Box sx={{ width: '100%' }}>
@@ -29,6 +48,8 @@ const TirePatching = () => {
                 setSelectedDate={setSelectedDate}
                 selectedTime={selectedTime}
                 setSelectedTime={setSelectedTime}
+                btnClick={handleBooking}
+
             />
         </Box>
     );
