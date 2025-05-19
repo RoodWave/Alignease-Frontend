@@ -28,9 +28,14 @@ const IssueReport = () => {
   const [loading, setLoading] = useState(false);
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-const EMAILJS_USER_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-const EMAILJS_ADMIN_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_USER_ID;
+const EMAILJS_USER_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_CLIENT;
+const EMAILJS_ADMIN_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_ADMIN;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+console.log({
+  EMAILJS_ADMIN_TEMPLATE_ID,EMAILJS_PUBLIC_KEY,EMAILJS_SERVICE_ID,EMAILJS_USER_TEMPLATE_ID
+});
+
 
 
   useEffect(() => {
@@ -69,6 +74,7 @@ const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_USER_ID;
 
       // Send notification email to admin
       const adminEmailParams = {
+        to_email: formData.reporterEmail,
         reporter_name: formData.reporterName,
         reporter_email: formData.reporterEmail,
         reporter_contact: formData.reporterContact || "Not provided",
@@ -121,7 +127,11 @@ const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_USER_ID;
 
       // Call the API
       const response = await reportService.addReport(payload);
+      console.log({response});
+      
       if (response.status === "success") {
+        console.log('if');
+        
         const emailSent = await sendEmails(formData);
 
         if (emailSent) {
