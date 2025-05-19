@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -8,17 +8,34 @@ import {
   Container,
   Paper,
   Grid,
+  CircularProgress
 } from '@mui/material';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import emailjs from '@emailjs/browser';
+import reportService from '../services/ReportService';
 
 const IssueReport = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    contactNumber: '',
-    serviceType: '',
+    reporterName: '',
+    reporterEmail: '',
+    reporterContact: '',
+    service: '',
     issueTitle: '',
-    description: ''
+    issueDescription: ''
   });
+
+  const [loading, setLoading] = useState(false);
+
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_USER_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_ADMIN_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_USER_ID;
+
+
+  useEffect(() => {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,21 +44,114 @@ const IssueReport = () => {
       [name]: value
     });
   };
+  const getServiceLabel = (value) => {
+    const service = serviceTypes.find(type => type.value === value);
+    return service ? service.label : value;
+  };
 
-  const handleSubmit = (e) => {
+  const sendEmails = async (formData) => {
+    try {
+      // Send confirmation email to user
+      const userEmailParams = {
+        to_email: formData.reporterEmail,
+        to_name: formData.reporterName,
+        service_type: getServiceLabel(formData.service),
+        issue_title: formData.issueTitle,
+        issue_description: formData.issueDescription,
+        contact_number: formData.reporterContact || "Not provided"
+      };
+
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_USER_TEMPLATE_ID,
+        userEmailParams
+      );
+
+      // Send notification email to admin
+      const adminEmailParams = {
+        reporter_name: formData.reporterName,
+        reporter_email: formData.reporterEmail,
+        reporter_contact: formData.reporterContact || "Not provided",
+        service_type: getServiceLabel(formData.service),
+        issue_title: formData.issueTitle,
+        issue_description: formData.issueDescription
+      };
+
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_ADMIN_TEMPLATE_ID,
+        adminEmailParams
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Add your form submission logic here
+
+    // Basic validation
+    if (!formData.reporterName || !formData.reporterEmail || !formData.service || !formData.issueTitle) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.reporterEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Map form data to match API payload structure
+      const payload = {
+        reporterName: formData.reporterName,
+        reporterEmail: formData.reporterEmail,
+        reporterContact: formData.reporterContact,
+        service: formData.service,
+        issueTitle: formData.issueTitle,
+        issueDescription: formData.issueDescription
+      };
+
+      // Call the API
+      const response = await reportService.addReport(payload);
+      if (response.status === "success") {
+        const emailSent = await sendEmails(formData);
+
+        if (emailSent) {
+          toast.success('Your issue has been reported successfully. A confirmation email has been sent to your inbox.');
+        } else {
+          toast.warning('Your issue has been reported successfully, but we could not send confirmation emails.');
+        }
+
+      }
+
+
+      // Send confirmation emails after successful API submission
+
+      // Clear form after successful submission
+      handleClear();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to submit the report. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClear = () => {
     setFormData({
-      fullName: '',
-      email: '',
-      contactNumber: '',
-      serviceType: '',
+      reporterName: '',
+      reporterEmail: '',
+      reporterContact: '',
+      service: '',
       issueTitle: '',
-      description: ''
+      issueDescription: ''
     });
   };
 
@@ -59,70 +169,70 @@ const IssueReport = () => {
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
           Tell Us About a Problem with Your Service
         </Typography>
-        
+
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Full Name
+                Full Name <span style={{ color: 'red' }}>*</span>
               </Typography>
               <TextField
                 fullWidth
-                name="fullName"
-                value={formData.fullName}
+                name="reporterName"
+                value={formData.reporterName}
                 onChange={handleChange}
-                placeholder="Kavindu Kaihara"
+                placeholder="John Doe"
                 variant="outlined"
                 size="small"
+                required
                 sx={{ bgcolor: 'white', borderRadius: 1 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Email
+                Email <span style={{ color: 'red' }}>*</span>
               </Typography>
               <TextField
                 fullWidth
-                name="email"
-                value={formData.email}
+                name="reporterEmail"
+                value={formData.reporterEmail}
                 onChange={handleChange}
-                placeholder="Kavindu.kaihara@gmail.com"
+                placeholder="john.doe@example.com"
                 variant="outlined"
                 size="small"
+                required
                 sx={{ bgcolor: 'white', borderRadius: 1 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="body2" sx={{ mb: 1 }}>
                 Contact Number
               </Typography>
               <TextField
                 fullWidth
-                name="contactNumber"
-                value={formData.contactNumber}
+                name="reporterContact"
+                value={formData.reporterContact}
                 onChange={handleChange}
-                placeholder="Enter Contact Number"
+                placeholder="+1234567890"
                 variant="outlined"
                 size="small"
                 sx={{ bgcolor: 'white', borderRadius: 1 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Service Type
+                Service Type <span style={{ color: 'red' }}>*</span>
               </Typography>
               <TextField
                 select
                 fullWidth
-                name="serviceType"
-                value={formData.serviceType}
+                name="service"
+                value={formData.service}
                 onChange={handleChange}
-                placeholder="Select Service Type"
-                variant="outlined"
-                size="small"
+                required
                 sx={{ bgcolor: 'white', borderRadius: 1 }}
               >
                 {serviceTypes.map((option) => (
@@ -132,45 +242,48 @@ const IssueReport = () => {
                 ))}
               </TextField>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Issue Title
+                Issue Title <span style={{ color: 'red' }}>*</span>
               </Typography>
               <TextField
                 fullWidth
                 name="issueTitle"
                 value={formData.issueTitle}
                 onChange={handleChange}
-                placeholder="Enter Issue Title"
+                placeholder="Brief description of the issue"
                 variant="outlined"
                 size="small"
+                required
                 sx={{ bgcolor: 'white', borderRadius: 1 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Issue Description
+                Issue Description <span style={{ color: 'red' }}>*</span>
               </Typography>
               <TextField
                 fullWidth
                 multiline
                 rows={5}
-                name="description"
-                value={formData.description}
+                name="issueDescription"
+                value={formData.issueDescription}
                 onChange={handleChange}
-                placeholder="Enter Issue Description"
+                placeholder="Please provide details about your issue"
                 variant="outlined"
+                required
                 sx={{ bgcolor: 'white', borderRadius: 1 }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
                 <Button
                   type="submit"
                   variant="contained"
+                  disabled={loading}
                   sx={{
                     bgcolor: '#DB002B',
                     color: 'white',
@@ -183,12 +296,13 @@ const IssueReport = () => {
                     width: 135
                   }}
                 >
-                  SAVE
+                  {loading ? <CircularProgress size={24} color="inherit" /> : 'SUBMIT'}
                 </Button>
                 <Button
                   type="button"
                   variant="outlined"
                   onClick={handleClear}
+                  disabled={loading}
                   sx={{
                     color: '#DB002B',
                     borderColor: '#DB002B',
