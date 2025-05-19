@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Paper,
@@ -9,21 +9,66 @@ import {
     TableHead,
     TableRow,
     Typography,
-    Rating
+    Rating,
+    Button,
+    Chip
 } from '@mui/material';
-
-const feedbackData = [
-    { name: 'Essen Peters', rating: 4, feedback: 'Great service, very quick and friendly!' },
-    { name: 'Anandsha De Silva', rating: 5, feedback: 'Excellent experience from start to finish.' },
-    { name: 'Hansi Isankya Rajapaksha', rating: 3, feedback: 'Service was okay, could be better.' },
-    { name: 'Anandsha De Silva', rating: 4, feedback: 'Appreciate the professionalism shown.' },
-    { name: 'Anandsha De Silva', rating: 2, feedback: 'Not happy with the delay in service.' },
-    { name: 'Anandsha De Silva', rating: 5, feedback: 'Very happy with the results!' }
-];
+import reviewService from '../services/ReviewService';
 
 const tableHeaderStyle = { bgcolor: '#F3F3F3' };
 
+const statusColors = {
+    PENDING: 'default',
+    REVIEWED: 'success',
+    REJECTED: 'error'
+};
+
 const CustomerFeedback = () => {
+    const [feedbackData, setFeedbackData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchFeedback = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const response = await reviewService.getAllReviews();
+                if (response.status === 'success') {
+                    setFeedbackData(response.reviews);
+                }
+            } catch (err) {
+                console.error("Error fetching feedback:", err);
+                setError("Failed to fetch feedback. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFeedback();
+    }, []);
+
+    const handleReview = async (reviewId) => {
+        try {
+            const payload = {
+                reviewId: reviewId,
+                status: "REVIEWED"
+            };
+            await reviewService.updateReviewStatus(payload);
+
+            setFeedbackData(prevData =>
+                prevData.map(item =>
+                    item.reviewId === reviewId
+                        ? { ...item, reviewStatus: "REVIEWED" }
+                        : item
+                )
+            );
+        } catch (err) {
+            console.error("Error updating review status:", err);
+            setError("Failed to update review status. Please try again.");
+        }
+    };
+
     return (
         <Box>
             <Typography variant="h5" fontWeight="600" mb={3}>
@@ -37,33 +82,66 @@ const CustomerFeedback = () => {
                     borderRadius: '20px'
                 }}
             >
-                <TableContainer component={Paper} sx={{
-                    maxHeight: 500,
-                    border: 1,
-                    borderColor: '#C6C6C6',
-                    borderRadius: '10px'
-                }}>
-                    <Table stickyHeader>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={tableHeaderStyle}>Name</TableCell>
-                                <TableCell sx={tableHeaderStyle}>Star Rating</TableCell>
-                                <TableCell sx={tableHeaderStyle}>Feedback</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {feedbackData.map((row, index) => (
-                                <TableRow key={index} sx={{ bgcolor: index % 2 === 0 ? '#FAFAFA' : '#FFFFFF' }}>
-                                    <TableCell>{row.name}</TableCell>
-                                    <TableCell>
-                                        <Rating value={row.rating} readOnly />
-                                    </TableCell>
-                                    <TableCell>{row.feedback}</TableCell>
+                {loading && <Typography>Loading feedback...</Typography>}
+                {error && <Typography color="error">{error}</Typography>}
+                {!loading && !error && feedbackData.length === 0 && (
+                    <Typography>No feedback available</Typography>
+                )}
+
+                {!loading && !error && feedbackData.length > 0 && (
+                    <TableContainer component={Paper} sx={{
+                        maxHeight: 500,
+                        border: 1,
+                        borderColor: '#C6C6C6',
+                        borderRadius: '10px'
+                    }}>
+                        <Table stickyHeader>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={tableHeaderStyle}>Title</TableCell>
+                                    <TableCell sx={tableHeaderStyle}>Rating</TableCell>
+                                    <TableCell sx={tableHeaderStyle}>Feedback</TableCell>
+                                    <TableCell sx={tableHeaderStyle}>Status</TableCell>
+                                    <TableCell sx={tableHeaderStyle}>Action</TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                            </TableHead>
+                            <TableBody>
+                                {feedbackData.map((row, index) => (
+                                    <TableRow key={row.reviewId} sx={{ bgcolor: index % 2 === 0 ? '#FAFAFA' : '#FFFFFF' }}>
+                                        <TableCell>{row.title}</TableCell>
+                                        <TableCell>
+                                            <Rating
+                                                value={parseFloat(row.rating)}
+                                                precision={0.5}
+                                                readOnly
+                                            />
+                                        </TableCell>
+                                        <TableCell>{row.content}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={row.reviewStatus}
+                                                color={statusColors[row.reviewStatus] || 'default'}
+                                                variant="outlined"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            {row.reviewStatus === 'PENDING' && (
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => handleReview(row.reviewId)}
+                                                >
+                                                    Review
+                                                </Button>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
             </Box>
         </Box>
     );

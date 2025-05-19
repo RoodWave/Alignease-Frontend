@@ -35,7 +35,7 @@ const productService = {
     },
     deleteProduct: async (id) => {
         try {
-            const response = await axiosInstance.delete(`/update/${id}`);
+            const response = await axiosInstance.delete(`/delete/${id}`);
             return response.data;
         } catch (error) {
             console.error("Error on deleting", error);
