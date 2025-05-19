@@ -13,11 +13,11 @@ import ProductCard from '../components/ProductCard';
 import productService from '../services/ProductService';
 import commonService from '../services/CommonService';
 
-const products = [
+const initialData = [
     {
         "brand": "PNEU",
         "model": "XP Street Grip",
-        "imageUrl": "blob:http://localhost:5173/53294d7f-77bd-456e-9286-e176568c2e6d",
+        "imageUrl": ProductImage1,
         "price": "35800",
         "currency": "LKR",
         "quantity": ""
@@ -25,7 +25,7 @@ const products = [
     {
         "brand": "Bridgestone",
         "model": "Dueler A/T",
-        "imageUrl": "blob:http://localhost:5173/82b411ff-6df1-4757-8ffd-d59601e60e32",
+        "imageUrl": ProductImage2,
         "price": "30000",
         "currency": "LKR",
         "quantity": ""
@@ -33,7 +33,7 @@ const products = [
     {
         "brand": "Desert",
         "model": "Rider Series",
-        "imageUrl": "blob:http://localhost:5173/6500f6c4-a3a3-4d1c-a4db-1dd91371497b",
+        "imageUrl": ProductImage3,
         "price": "28000",
         "currency": "LKR",
         "quantity": ""
@@ -44,7 +44,7 @@ const products = [
 
 const TireOrdering = () => {
 
-    const [productsWithImages, setProductsWithImages] = useState(products);
+    const [productsWithImages, setProductsWithImages] = useState(initialData);
     const userId = localStorage.getItem("userId")
 
     const getAllProducts = async () => {
@@ -71,7 +71,7 @@ const TireOrdering = () => {
 
                 console.log({ products });
 
-                setProductsWithImages(products); // set your state
+                setProductsWithImages([...initialData,products]); // set your state
             }
         } catch (error) {
             console.error("Error fetching products with images", error);

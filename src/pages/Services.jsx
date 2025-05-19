@@ -29,7 +29,7 @@ import commonService from '../services/CommonService';
 
 
   // Sample service data
-  const services = [
+  const initialData = [
     {
       id: 1,
       title: 'Tire Ordering',
@@ -68,7 +68,7 @@ import commonService from '../services/CommonService';
 const Services = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-      const [servicesWithImages, setServicesWithImages] = useState([]);
+      const [servicesWithImages, setServicesWithImages] = useState(initialData);
       const userId = localStorage.getItem("userId")
   
       const getAllServices = async () => {
@@ -83,15 +83,13 @@ const Services = () => {
                         id: service.serviceId,
                         title: service.name,
                         image: imageBlobUrl,
-                        path: '/services/tire-ordering'
+                        path: '/services/wheel-balancing'
                       };
                   });
   
                   const services = await Promise.all(productPromises);
   
-                  console.log({ services });
-  
-                  setServicesWithImages(services);
+                  setServicesWithImages([...initialData,services]);
               }
           } catch (error) {
               console.error("Error fetching services with images", error);

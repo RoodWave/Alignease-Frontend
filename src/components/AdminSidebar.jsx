@@ -16,6 +16,7 @@ const AdminSidebar = () => {
         { text: 'Issue Reporting', path: '/admin/issues' },
         { text: 'Customer Feedback', path: '/admin/feedback' },
         { text: 'Services', path: '/admin/services' },
+        { text: 'Logout', path: '/login' },
     ];
 
     return (
@@ -38,6 +39,7 @@ const AdminSidebar = () => {
                         key={item.text}
                         component={NavLink}
                         to={item.path}
+                        onClick={()=>localStorage.clear()}
                         sx={{
                             borderRadius: 2,
                             mb: 1,
