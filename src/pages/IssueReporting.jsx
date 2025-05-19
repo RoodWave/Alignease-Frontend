@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -11,16 +11,12 @@ import {
     TableRow,
     Typography,
     Menu,
-    MenuItem
+    MenuItem,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-
-const issuesData = [
-    { name: 'Anandsha De Silva', email: 'kasunthilina@gmail.com', number: '0789999999', service: 'Wheel Balancing', title: 'System failure when selecting date', status: 'Open' },
-    { name: 'Fayodi Perera', email: 'fayodi@gmail.com', number: '0771234567', service: 'Wheel Balancing', title: 'App crashes on submit', status: 'Open' },
-    { name: 'Mahmood King', email: 'kingmahmood@gmail.com', number: '0756789012', service: 'Wheel Balancing', title: 'Incorrect pricing shown', status: 'Open' },
-    { name: 'Kasun De Silva', email: 'kasunthilina@gmail.com', number: '0776543210', service: 'Wheel Balancing', title: 'Cannot book a time slot', status: 'Open' }
-];
+import reportService from "../services/ReportService.js";
 
 const tableHeaderStyle = { bgcolor: '#F3F3F3' };
 const actionButtonStyle = {
@@ -32,8 +28,47 @@ const actionButtonStyle = {
     alignItems: 'center'
 };
 
+const statusMap = {
+    'resolve': 'RESOLVED',
+    'manage': 'MANAGING',
+    'cancel': 'CANCELLED'
+};
+
+const statusDisplayMap = {
+    'RESOLVED': 'Resolved',
+    'MANAGING': 'Managing',
+    'CANCELLED': 'Cancelled',
+    'OPEN': 'Open'
+};
+
 const IssueReporting = () => {
-    const [anchorEl, setAnchorEl] = useState(Array(issuesData.length).fill(null));
+    const [reports, setReports] = useState([]);
+    const [anchorEl, setAnchorEl] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchReports();
+    }, []);
+
+    const fetchReports = async () => {
+        try {
+            setLoading(true);
+            const response = await reportService.getAllReports();
+
+            if (response.status === "success") {
+                setReports(response.reportList || []);
+                setAnchorEl(Array(response.reportList?.length || 0).fill(null));
+            } else {
+                setError(response.message || "Failed to load reports");
+            }
+            setLoading(false);
+        } catch (err) {
+            console.error("Failed to fetch reports:", err);
+            setError("Failed to load reports. Please try again later.");
+            setLoading(false);
+        }
+    };
 
     const handleClick = (event, index) => {
         const newAnchorEl = [...anchorEl];
@@ -47,10 +82,67 @@ const IssueReporting = () => {
         setAnchorEl(newAnchorEl);
     };
 
-    const handleAction = (action, row, index) => {
-        console.log(`Action ${action} performed on issue: ${row.title}`);
-        handleClose(index);
+    const handleAction = async (action, report, index) => {
+        try {
+            const payload = {
+                reportId: report.reportId,
+                status: statusMap[action]
+            };
+
+            const response = await reportService.updateReportStatus(payload);
+
+            if (response.status === "success") {
+                const updatedReports = [...reports];
+                updatedReports[index] = {
+                    ...updatedReports[index],
+                    reportStatus: payload.status
+                };
+                setReports(updatedReports);
+            } else {
+                setError(response.message || "Failed to update report status");
+            }
+
+            handleClose(index);
+        } catch (err) {
+            console.error("Failed to update report status:", err);
+            setError("Failed to update report status. Please try again.");
+        }
     };
+
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box mb={3}>
+                <Alert severity="error">{error}</Alert>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={fetchReports}
+                    sx={{ mt: 2 }}
+                >
+                    Retry
+                </Button>
+            </Box>
+        );
+    }
+
+    if (reports.length === 0) {
+        return (
+            <Box>
+                <Typography variant="h5" fontWeight="600" mb={3}>
+                    Issue Reporting
+                </Typography>
+                <Alert severity="info">No reports found</Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box>
@@ -75,7 +167,7 @@ const IssueReporting = () => {
                             <TableRow>
                                 <TableCell sx={tableHeaderStyle}>Name</TableCell>
                                 <TableCell sx={tableHeaderStyle}>Email</TableCell>
-                                <TableCell sx={tableHeaderStyle}>Number</TableCell>
+                                <TableCell sx={tableHeaderStyle}>Contact</TableCell>
                                 <TableCell sx={tableHeaderStyle}>Service</TableCell>
                                 <TableCell sx={tableHeaderStyle}>Issue Title</TableCell>
                                 <TableCell sx={tableHeaderStyle}>Status</TableCell>
@@ -83,20 +175,20 @@ const IssueReporting = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {issuesData.map((row, index) => (
-                                <TableRow key={index} sx={{ bgcolor: index % 2 === 0 ? '#FAFAFA' : '#FFFFFF' }}>
-                                    <TableCell>{row.name}</TableCell>
-                                    <TableCell>{row.email}</TableCell>
-                                    <TableCell>{row.number}</TableCell>
-                                    <TableCell>{row.service}</TableCell>
-                                    <TableCell>{row.title}</TableCell>
-                                    <TableCell>{row.status}</TableCell>
+                            {reports.map((report, index) => (
+                                <TableRow key={report.reportId} sx={{ bgcolor: index % 2 === 0 ? '#FAFAFA' : '#FFFFFF' }}>
+                                    <TableCell>{report.reporterName}</TableCell>
+                                    <TableCell>{report.reporterEmail}</TableCell>
+                                    <TableCell>{report.reporterContact}</TableCell>
+                                    <TableCell>{report.service}</TableCell>
+                                    <TableCell>{report.issueTitle}</TableCell>
+                                    <TableCell>{statusDisplayMap[report.reportStatus] || report.reportStatus}</TableCell>
                                     <TableCell>
                                         <Button
                                             variant="contained"
                                             size="small"
                                             sx={actionButtonStyle}
-                                            aria-label={`Actions for ${row.name}`}
+                                            aria-label={`Actions for ${report.reporterName}`}
                                             onClick={(event) => handleClick(event, index)}
                                             endIcon={<KeyboardArrowDownIcon />}
                                         >
@@ -115,9 +207,24 @@ const IssueReporting = () => {
                                                 horizontal: 'right',
                                             }}
                                         >
-                                            <MenuItem onClick={() => handleAction('resolve', row, index)}>Resolve</MenuItem>
-                                            <MenuItem onClick={() => handleAction('cancel', row, index)}>Cancel</MenuItem>
-                                            <MenuItem onClick={() => handleAction('manage', row, index)}>Manage</MenuItem>
+                                            <MenuItem
+                                                onClick={() => handleAction('resolve', report, index)}
+                                                disabled={report.reportStatus === 'RESOLVED'}
+                                            >
+                                                Resolve
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={() => handleAction('manage', report, index)}
+                                                disabled={report.reportStatus === 'MANAGING'}
+                                            >
+                                                Manage
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={() => handleAction('cancel', report, index)}
+                                                disabled={report.reportStatus === 'CANCELLED'}
+                                            >
+                                                Cancel
+                                            </MenuItem>
                                         </Menu>
                                     </TableCell>
                                 </TableRow>
