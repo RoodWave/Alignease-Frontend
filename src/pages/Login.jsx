@@ -80,11 +80,9 @@ const Login = () => {
                 localStorage.setItem("userName", response.user.userName);
                 localStorage.setItem("userData", JSON.stringify(response.user));
 
-
-                navigate("/");
-                if (response?.user?.userType === "CUSTOMER") {
+                if (response?.user?.userRole === "CUSTOMER") {
                     navigate("/");
-                } else if (response?.user?.userType === "ADMIN") {
+                } else if (response?.user?.userRole === "ADMIN") {
                     navigate("/admin/bookings");
                 }
             } else {
